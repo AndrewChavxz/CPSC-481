@@ -51,6 +51,10 @@ class Connect4Match:
             self.is_finished = True
         else:
             self.active_player = 3 - self.active_player # Toggle 1 and 2
+
+        print(f"Board Score from P1 (RED)   : {self.evaluate_board(1)}\n")
+       # print(f"Board Score from P2 (YELLOW): {self.evaluate_board(2)}")
+
             
         return True 
 
@@ -75,6 +79,45 @@ class Connect4Match:
             r += dr
             c += dc
         return True
+    
+    # minimax implementation
+    
+    # calculating score of each 4 cell wide 'window'
+    def calculate_score(self, window, player_id):
+        score = 0
+        opponent = 3 - player_id
+        
+        if window.count(player_id) == 4:
+            score += 1000000
+        elif window.count(player_id) == 3 and window.count(0) == 1:
+            score += 50
+        elif window.count(player_id) == 2 and window.count(0) == 2:
+            score += 10
+
+        if window.count(opponent) == 3 and window.count(0) == 1:
+            score-= 80
+        
+        return score
+
+    # checking board to compute all window scores
+    def evaluate_board(self, player_id):
+        total = 0
+        # dr, dc representing row and column directions
+        for dr, dc in WIN_VECTORS:
+            for r in range(CONFIG['rows']):
+                for c in range(CONFIG['cols']):
+                    window = []
+                    for i in range(4):
+                        nr = r + dr * i
+                        nc = c + dc * i 
+
+                        if 0 <= nr < CONFIG['rows'] and 0 <= nc < CONFIG['cols']:
+                            window.append(self.grid[nr][nc])
+                        if len(window) == 4:
+                            total += self.calculate_score(window, player_id)
+
+        return total
+
 
 # The GameWindow class manages the Pygame graphical interface,
 # rendering the board, handling user inputs, and updating the display.
