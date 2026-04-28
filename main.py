@@ -2,6 +2,7 @@ import pygame
 import sys
 import math
 import random
+import argparse
 
 CONFIG = {
     'rows': 6,
@@ -27,6 +28,7 @@ class Connect4Match:
         self.active_player = 1
         self.winner = None
         self.is_finished = False
+        self.iterations = 0
 
     def get_cell(self, r, c):
         return self.grid[r][c] # return specific row and column
@@ -93,7 +95,9 @@ class Connect4Match:
     def is_terminal_node(self):
         return self._detect_victory(1) or self._detect_victory(2) or len(self.get_valid_locations()) == 0
 
-    def minimax(self, depth, maximizingPlayer):
+    def minimax(self, depth, maximizingPlayer, alpha, beta, usePruning=True):
+        self.iterations += 1
+
         valid_locations = self.get_valid_locations()
         is_terminal = self.is_terminal_node()
         if depth == 0 or is_terminal:
@@ -114,12 +118,20 @@ class Connect4Match:
                 row = self.find_lowest_empty_row(col)
                 # simulate move
                 self.grid[row][col] = 2
-                new_score = self.minimax(depth-1, False)[1]
+                new_score = self.minimax(depth-1, False, alpha, beta, usePruning)[1]
                 # undo move
                 self.grid[row][col] = 0
                 if new_score > value:
                     value = new_score
                     best_col = col
+
+                # Alpha-Beta Pruning
+                if(usePruning):
+                    alpha = max(alpha, value)
+                    if alpha >= beta:
+                        # Prune branch
+                        break
+
             return best_col, value
         else: # Minimizing player
             value = math.inf
@@ -128,12 +140,20 @@ class Connect4Match:
                 row = self.find_lowest_empty_row(col)
                 # simulate move
                 self.grid[row][col] = 1
-                new_score = self.minimax(depth-1, True)[1]
+                new_score = self.minimax(depth-1, True, alpha, beta, usePruning)[1]
                 # undo move
                 self.grid[row][col] = 0
                 if new_score < value:
                     value = new_score
                     best_col = col
+
+                # Alpha-Beta Pruning
+                if(usePruning):
+                    beta = min(beta, value)
+                    if alpha >= beta:
+                        # Prune branch
+                        break
+
             return best_col, value
 
     # calculating score of each 4 cell wide 'window'
@@ -176,7 +196,7 @@ class Connect4Match:
 # The GameWindow class manages the Pygame graphical interface,
 # rendering the board, handling user inputs, and updating the display.
 class GameWindow:
-    def __init__(self):
+    def __init__(self, use_Pruning):
         pygame.init()
         self.width = CONFIG['cols'] * CONFIG['cell_size']
         self.height = (CONFIG['rows'] + 1) * CONFIG['cell_size']
@@ -184,6 +204,7 @@ class GameWindow:
         pygame.display.set_caption("Connect 4 - Unique Edition")
         self.game = Connect4Match()
         self.font = pygame.font.SysFont("Verdana", 60, bold=True)
+        self.usePruning = use_Pruning
 
     def run(self):
         self._render()
@@ -206,7 +227,7 @@ class GameWindow:
                                 pygame.time.wait(3000)
 
             if not self.game.is_finished and self.game.active_player == 2:
-                col, minimax_score = self.game.minimax(4, True)
+                col, minimax_score = self.game.minimax(4, True, -math.inf, math.inf, usePruning=self.usePruning)
                 if col is not None:
                     # Clear top tracker before AI moves
                     pygame.draw.rect(self.display_surface, CONFIG['empty_color'], (0, 0, self.width, CONFIG['cell_size']))
@@ -253,11 +274,24 @@ class GameWindow:
         text_color = CONFIG['player_colors'][self.game.winner]
         text_surf = self.font.render(f"Player {self.game.winner} Wins!", True, text_color)
         text_rect = text_surf.get_rect(center=(self.width // 2, CONFIG['cell_size'] // 2))
-        
+        print(f"Total iterations: {self.game.iterations}")
         # Clear the top area
         pygame.draw.rect(self.display_surface, CONFIG['empty_color'], (0, 0, self.width, CONFIG['cell_size']))
         self.display_surface.blit(text_surf, text_rect)
 
 if __name__ == '__main__':
-    app = GameWindow()
-    app.run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-pruning', action='store_false')
+    args = parser.parse_args()
+    usePruning = args.no_pruning
+
+    if(not usePruning):
+        print("Starting game with Alpha-Beta pruning OFF")
+        app = GameWindow(usePruning)
+        app.run()
+    else:
+        print("Starting game with Alpha-Beta pruning ON")
+        app = GameWindow(True)
+        app.run()
+
+    
