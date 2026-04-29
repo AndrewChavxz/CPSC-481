@@ -24,6 +24,10 @@ Or to play without Alpha-Beta pruning:
 ```
 # python main.py --no-pruning
 ```
+Other options available:
+```
+# --depth <#>
+```
 (Make sure you are in the directory where main.py is saved when you run the command!)
 
 The game window should display and you can start playing.
