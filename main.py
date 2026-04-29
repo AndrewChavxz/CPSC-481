@@ -3,6 +3,7 @@ import sys
 import math
 import random
 import argparse
+import time
 
 CONFIG = {
     'rows': 6,
@@ -29,6 +30,7 @@ class Connect4Match:
         self.winner = None
         self.is_finished = False
         self.iterations = 0
+        self.totalIterations = 0
 
     def get_cell(self, r, c):
         return self.grid[r][c] # return specific row and column
@@ -56,8 +58,8 @@ class Connect4Match:
         else:
             self.active_player = 3 - self.active_player # Toggle 1 and 2
 
-        print(f"Board Score from P1 (RED)   : {self.evaluate_board(1)}\n")
-       # print(f"Board Score from P2 (YELLOW): {self.evaluate_board(2)}")
+        #print(f"Board Score from P1 (RED)   : {self.evaluate_board(1)}\n")
+        #print(f"Board Score from P2 (YELLOW): {self.evaluate_board(2)}")
 
             
         return True 
@@ -206,7 +208,6 @@ class GameWindow:
         self.font = pygame.font.SysFont("Verdana", 60, bold=True)
         self.usePruning = use_Pruning
         self.depth = depth
-
     def run(self):
         self._render()
         while True:
@@ -228,7 +229,12 @@ class GameWindow:
                                 pygame.time.wait(3000)
 
             if not self.game.is_finished and self.game.active_player == 2:
+                self.game.iterations = 0
+                start = time.time()
                 col, minimax_score = self.game.minimax(self.depth, True, -math.inf, math.inf, usePruning=self.usePruning)
+                elapsed = time.time() - start
+                print(f"[{elapsed:.4f}] Pruning: {self.usePruning} | Depth: {self.depth} | Iterations: {self.game.iterations}")
+                self.game.totalIterations += self.game.iterations
                 if col is not None:
                     # Clear top tracker before AI moves
                     pygame.draw.rect(self.display_surface, CONFIG['empty_color'], (0, 0, self.width, CONFIG['cell_size']))
@@ -275,7 +281,7 @@ class GameWindow:
         text_color = CONFIG['player_colors'][self.game.winner]
         text_surf = self.font.render(f"Player {self.game.winner} Wins!", True, text_color)
         text_rect = text_surf.get_rect(center=(self.width // 2, CONFIG['cell_size'] // 2))
-        print(f"Total iterations: {self.game.iterations}")
+        print(f"Total iterations: {self.game.totalIterations}")
         # Clear the top area
         pygame.draw.rect(self.display_surface, CONFIG['empty_color'], (0, 0, self.width, CONFIG['cell_size']))
         self.display_surface.blit(text_surf, text_rect)
