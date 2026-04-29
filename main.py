@@ -196,7 +196,7 @@ class Connect4Match:
 # The GameWindow class manages the Pygame graphical interface,
 # rendering the board, handling user inputs, and updating the display.
 class GameWindow:
-    def __init__(self, use_Pruning):
+    def __init__(self, use_Pruning, depth=4):
         pygame.init()
         self.width = CONFIG['cols'] * CONFIG['cell_size']
         self.height = (CONFIG['rows'] + 1) * CONFIG['cell_size']
@@ -205,6 +205,7 @@ class GameWindow:
         self.game = Connect4Match()
         self.font = pygame.font.SysFont("Verdana", 60, bold=True)
         self.usePruning = use_Pruning
+        self.depth = depth
 
     def run(self):
         self._render()
@@ -227,7 +228,7 @@ class GameWindow:
                                 pygame.time.wait(3000)
 
             if not self.game.is_finished and self.game.active_player == 2:
-                col, minimax_score = self.game.minimax(4, True, -math.inf, math.inf, usePruning=self.usePruning)
+                col, minimax_score = self.game.minimax(self.depth, True, -math.inf, math.inf, usePruning=self.usePruning)
                 if col is not None:
                     # Clear top tracker before AI moves
                     pygame.draw.rect(self.display_surface, CONFIG['empty_color'], (0, 0, self.width, CONFIG['cell_size']))
@@ -282,16 +283,19 @@ class GameWindow:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-pruning', action='store_false')
+    parser.add_argument('--depth', type=int, default=4)
     args = parser.parse_args()
+
     usePruning = args.no_pruning
+    aiDepth = args.depth
 
     if(not usePruning):
-        print("Starting game with Alpha-Beta pruning OFF")
-        app = GameWindow(usePruning)
+        print(f"Starting game with Alpha-Beta pruning OFF with Depth = {aiDepth}")
+        app = GameWindow(usePruning, depth=aiDepth)
         app.run()
     else:
-        print("Starting game with Alpha-Beta pruning ON")
-        app = GameWindow(True)
+        print(f"Starting game with Alpha-Beta pruning ON with Depth = {aiDepth}")
+        app = GameWindow(True, depth=aiDepth)
         app.run()
 
     
